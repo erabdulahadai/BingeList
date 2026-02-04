@@ -1,0 +1,118 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div class="text-center mb-30">
+        <h1 style="margin-bottom: 5px;">Taste Compatibility</h1>
+        <p style="color: var(--text-muted); font-size: 1.2rem;">
+            <span style="color: var(--neon-blue);">@{{ current_user.username }}</span>
+            VS
+            <span style="color: var(--neon-pink);">@{{ target_user.username }}</span>
+        </p>
+    </div>
+
+    <!-- Main Score Card -->
+    <div class="glass-card text-center" style="margin-bottom: 40px; padding: 40px;">
+        {% if common_count > 0 %}
+        <div style="font-size: 6rem; font-weight: 800; line-height: 1; 
+                background: linear-gradient(135deg, var(--neon-green), var(--neon-blue));
+                -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;
+                text-shadow: 0 0 30px rgba(0, 224, 84, 0.3);">
+            {{ score }}%
+        </div>
+        <h2 style="font-size: 2.5rem; margin-top: 10px; color: white;">{{ badge }}</h2>
+        <p style="font-size: 1.1rem; color: var(--text-muted); max-width: 600px; margin: 0 auto;">
+            {{ description }}
+        </p>
+        <p style="margin-top: 20px; font-size: 0.9rem;">Based on {{ common_count }} shared movies.</p>
+        {% else %}
+        <div style="font-size: 4rem; color: var(--text-muted);">?</div>
+        <h2>Not Enough Data</h2>
+        <p>You both need to rate some of the same movies to calculate compatibility!</p>
+        {% endif %}
+    </div>
+
+    <!-- Recommendations Section -->
+    {% if recommendations %}
+    <div style="margin-bottom: 50px;">
+        <h3 class="text-center" style="margin-bottom: 20px;">You Gotta Watch This</h3>
+        <p class="text-center" style="color: var(--text-muted); margin-bottom: 30px;">
+            Highly rated favorites from <span style="color: var(--neon-pink);">@{{ target_user.username }}</span> that
+            you haven't seen.
+        </p>
+        <div class="movie-grid" style="grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));">
+            {% for movie in recommendations %}
+            <div class="movie-card">
+                <a href="{{ url_for('movie_details', tmdb_id=movie.tmdb_id, media_type=movie.media_type) }}">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster }}" alt="{{ movie.title }}"
+                        onerror="this.src='https://via.placeholder.com/500x750?text=No+Poster'">
+                </a>
+                <div class="movie-info">
+                    <h3 class="movie-title" style="font-size: 1rem;">{{ movie.title }}</h3>
+                </div>
+                <div
+                    style="position: absolute; top: 10px; right: 10px; background: var(--neon-pink); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.8rem; font-weight: bold;">
+                    Recommended
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+    {% endif %}
+
+    {% if comparison_data %}
+    <h3 class="text-center">The Evidence</h3>
+
+    <div style="display: grid; gap: 20px;">
+        {% for item in comparison_data|sort(attribute='diff') %}
+        <div class="glass-card"
+            style="display: flex; align-items: center; padding: 15px; position: relative; overflow: hidden;">
+            <!-- Category Badge -->
+            {% if item.category != 'Normal' %}
+            <div style="position: absolute; top: 10px; right: 10px; font-size: 0.7rem; font-weight: bold; 
+                padding: 3px 8px; border-radius: 4px; text-transform: uppercase; letter-spacing: 0.05em;
+                background: {{ '#e50914' if item.category == 'Shared Hate' or item.category == 'Debate' else '#00e054' }};
+                color: white;">
+                {{ item.category }}
+            </div>
+            {% endif %}
+
+            <img src="https://image.tmdb.org/t/p/w92{{ item.movie.poster }}"
+                style="height: 80px; border-radius: 8px; margin-right: 20px;"
+                onerror="this.src='https://via.placeholder.com/92x138?text=No+Img'">
+
+            <div style="flex-grow: 1;">
+                <h4 style="margin: 0; font-size: 1.1rem;">{{ item.movie.title }}</h4>
+                <div style="display: flex; gap: 30px; margin-top: 10px;">
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">YOU</span>
+                        <div style="font-size: 1.2rem; font-weight: bold; color: var(--neon-blue);">
+                            {{ item.my_rating }}
+                        </div>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">THEM</span>
+                        <div style="font-size: 1.2rem; font-weight: bold; color: var(--neon-pink);">
+                            {{ item.their_rating }}
+                        </div>
+                    </div>
+                    <div>
+                        <span style="font-size: 0.8rem; color: var(--text-muted);">DIFF</span>
+                        <div
+                            style="font-size: 1.2rem; font-weight: bold; 
+                            color: {{ '#00e054' if item.diff <= 2 else ('#ff4757' if item.diff >= 5 else '#ffa502') }};">
+                            {{ item.diff }}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <div class="text-center mt-50">
+        <a href="{{ url_for('chat', username=target_user.username) }}" class="btn btn-primary">Back to Chat</a>
+    </div>
+</div>
+{% endblock %}

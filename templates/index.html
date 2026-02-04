@@ -1,0 +1,38 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="hero fade-in">
+    <h1>TRACK YOUR SCIFI<br>OBSESSIONS</h1>
+    <p>The ultimate futuristic interface for logging, reviewing, and curating your cinema experience.</p>
+
+    <div style="margin-top: 40px;">
+        {% if current_user.is_authenticated %}
+        <a href="{{ url_for('dashboard') }}" class="btn btn-primary">Go to Dashboard</a>
+        {% else %}
+        <a href="{{ url_for('signup') }}" class="btn btn-primary">Join the Network</a>
+        <a href="{{ url_for('login') }}" class="btn btn-neon" style="margin-left: 20px;"> Login</a>
+        {% endif %}
+    </div>
+
+    <div style="margin-top: 60px;">
+        <h3 class="text-center" style="margin-bottom: 30px;">Trending Transmissions</h3>
+        {% if trending_movies %}
+        <div class="movie-grid">
+            {% for movie in trending_movies %}
+            <div class="movie-card">
+                <a href="{{ url_for('movie_details', tmdb_id=movie.id) }}">
+                    <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="{{ movie.title }}">
+                </a>
+                <div class="movie-info">
+                    <h3 class="movie-title">{{ movie.title }}</h3>
+                    <p style="font-size: 0.8rem; margin: 0;">{{ movie.vote_average }} ★</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center" style="color: var(--text-muted);">Scanning deep space frequencies...</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

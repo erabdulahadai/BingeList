@@ -1,0 +1,60 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h2 style="margin-bottom: 5px;">{{ movie_list.name }}</h2>
+            <p style="color: var(--text-muted);">{{ movie_list.description }}</p>
+        </div>
+        <div>
+            <a href="{{ url_for('dashboard') }}" class="btn btn-neon">Back to Dashboard</a>
+            <a href="{{ url_for('search') }}" class="btn btn-primary">+ Add Movie</a>
+        </div>
+    </div>
+
+    {% if movie_list.movies %}
+    <div class="movie-grid">
+        {% for movie in movie_list.movies %}
+        <div class="movie-card">
+            <a
+                href="{{ url_for('movie_details', tmdb_id=movie.tmdb_id, media_type=movie.media_type or 'movie') if movie.tmdb_id else '#' }}">
+                {% if movie.poster %}
+                <img src="https://image.tmdb.org/t/p/w500{{ movie.poster }}" alt="{{ movie.title }}"
+                    onerror="this.onerror=null;this.src='https://via.placeholder.com/500x750?text=No+Poster'">
+                {% else %}
+                <img src="https://via.placeholder.com/500x750?text=No+Poster" alt="{{ movie.title }}">
+                {% endif %}
+
+                {% if movie.media_type == 'tv' %}
+                <div
+                    style="position: absolute; top: 10px; right: 10px; background: var(--accent-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 0.7rem; font-weight: bold; box-shadow: 0 2px 5px rgba(0,0,0,0.5);">
+                    TV</div>
+                {% endif %}
+            </a>
+            <div class="movie-info">
+                <h3 class="movie-title">{{ movie.title }}</h3>
+
+                {% set user_reviews = movie.reviews | selectattr("user_id", "equalto", current_user.id) | list %}
+                {% if user_reviews %}
+                <div class="movie-rating" style="color: var(--neon-green)">★ {{ user_reviews[0].rating }}/10</div>
+                <p
+                    style="font-size: 0.8rem; margin-top: 5px; color: #ccc; overflow: hidden; text-overflow: ellipsis; display: -webkit-box; -webkit-line-clamp: 3; line-clamp: 3; -webkit-box-orient: vertical;">
+                    {{ user_reviews[0].content }}</p>
+                {% else %}
+                <a href="{{ url_for('review', movie_id=movie.id) }}" class="btn btn-primary"
+                    style="padding: 8px 15px; font-size: 0.8rem; margin-top: 10px; width: 100%; box-sizing: border-box;">Log
+                    Review</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass-card text-center mt-50">
+        <h3>This list is empty.</h3>
+        <a href="{{ url_for('search') }}" class="btn btn-primary">Add Movies</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="container fade-in" style="display: flex; justify-content: center;">
+    <div class="glass-card" style="width: 100%; max-width: 600px;">
+        <h2 class="text-center" style="margin-bottom: 30px;">Log Entry: {{ movie.title }}</h2>
+
+        <div style="text-align: center; margin-bottom: 30px;">
+            <img src="https://image.tmdb.org/t/p/w200{{ movie.poster }}" alt="{{ movie.title }}"
+                style="border-radius: 10px; box-shadow: 0 0 20px rgba(0,0,0,0.5);">
+        </div>
+
+        <form method="POST">
+            <label style="display: block; margin-bottom: 10px; font-weight: bold; color: var(--neon-green);">RATING
+                (1-10)</label>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="range" name="rating" min="1" max="10" value="5"
+                    oninput="this.nextElementSibling.value = this.value" style="flex-grow: 1;">
+                <output style="color: var(--neon-blue); font-weight: bold; width: 30px;">5</output>
+            </div>
+
+            <label style="display: block; margin-bottom: 10px; font-weight: bold;">REVIEW</label>
+            <textarea name="content" rows="5" placeholder="Record your observations..." required></textarea>
+
+            <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 20px;">Save to
+                Database</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
