@@ -1,18 +1,35 @@
 from flask import Flask, render_template, request, redirect, url_for, flash
+
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 import requests
 from config import Config
-from extensions import db, login_manager
+from extensions import db, login_manager, oauth
 from sqlalchemy import or_
 from models import User, Movie, Review, MovieList, Message
 from datetime import datetime
+import re
 
 app = Flask(__name__)
 app.config.from_object(Config)
 
 db.init_app(app)
 login_manager.init_app(app)
+oauth.init_app(app)
+
+# Configure Google OAuth
+oauth.register(
+    name='google',
+    client_id=app.config['GOOGLE_CLIENT_ID'],
+    client_secret=app.config['GOOGLE_CLIENT_SECRET'],
+    access_token_url='https://accounts.google.com/o/oauth2/token',
+    access_token_params=None,
+    authorize_url='https://accounts.google.com/o/oauth2/auth',
+    authorize_params=None,
+    api_base_url='https://www.googleapis.com/oauth2/v1/',
+    userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',  # This is only needed if using openid to fetch user info
+    client_kwargs={'scope': 'openid email profile'},
+)
 
 # Helper to inject user list into templates
 @app.context_processor
@@ -25,6 +42,9 @@ def inject_user_lists():
 # --- ROUTES ---
 @app.route('/')
 def index():
+    if not current_user.is_authenticated:
+        return redirect(url_for('login'))
+        
     # Fetch trending/now playing movies for the home page
     api_key = app.config['TMDB_API_KEY']
     url = f"https://api.themoviedb.org/3/movie/now_playing?api_key={api_key}&language=en-US&page=1"
@@ -42,8 +62,23 @@ def index():
 @app.route('/signup', methods=['GET', 'POST'])
 def signup():
     if request.method == 'POST':
-        hashed_pw = generate_password_hash(request.form['password'])
-        new_user = User(username=request.form['username'], password=hashed_pw)
+        username = request.form['username']
+        email = request.form['email']
+        password = request.form['password']
+        
+        # Password Validation
+        if len(password) < 8 or not re.search(r"[a-zA-Z]", password) or not re.search(r"\d", password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            flash('Password must be at least 8 chars, include a letter, a number, and a special character.', 'error')
+            return redirect(url_for('signup'))
+            
+        # Check if user exists
+        existing_user = User.query.filter((User.username == username) | (User.email == email)).first()
+        if existing_user:
+            flash('Username or Email already exists.', 'error')
+            return redirect(url_for('signup'))
+
+        hashed_pw = generate_password_hash(password)
+        new_user = User(username=username, email=email, password=hashed_pw)
         db.session.add(new_user)
         db.session.commit()
         
@@ -58,11 +93,88 @@ def signup():
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
-        user = User.query.filter_by(username=request.form['username']).first()
-        if user and check_password_hash(user.password, request.form['password']):
+        identifier = request.form['username'] # Can be username or email
+        password = request.form['password']
+        
+        user = User.query.filter((User.username == identifier) | (User.email == identifier)).first()
+        if user and check_password_hash(user.password, password):
             login_user(user)
             return redirect(url_for('dashboard'))
+        else:
+            flash('Invalid credentials.', 'error')
     return render_template('login.html')
+
+@app.route('/login/google')
+def google_login():
+    mode = request.args.get('mode', 'login') # 'login' or 'signup'
+    redirect_uri = url_for('google_auth', _external=True)
+    return oauth.google.authorize_redirect(redirect_uri, state=mode)
+
+@app.route('/login/google/callback')
+def google_auth():
+    token = oauth.google.authorize_access_token()
+    user_info = oauth.google.parse_id_token(token, nonce=None)
+    
+    # In some flow, if parse_id_token fails or you want userinfo endpoint:
+    # resp = oauth.google.get('userinfo')
+    # user_info = resp.json()
+    
+    google_id = user_info.get('sub') # Google ID
+    email = user_info.get('email')
+    name = user_info.get('name') or email.split('@')[0]
+    
+    mode = request.args.get('state', 'login')
+    
+    user = User.query.filter((User.email == email) | (User.google_id == google_id)).first()
+    
+    if mode == 'login':
+        if user:
+            # Update google_id if missing
+            if not user.google_id:
+                user.google_id = google_id
+                db.session.commit()
+            login_user(user)
+            return redirect(url_for('dashboard'))
+        else:
+            flash('User not found. Please sign up first.', 'error')
+            return redirect(url_for('login'))
+            
+    elif mode == 'signup':
+        if user:
+            # If user exists, just log them in
+            if not user.google_id:
+                user.google_id = google_id
+                db.session.commit()
+            login_user(user)
+            flash('Account already exists. Logged in successfully.', 'success')
+            return redirect(url_for('dashboard'))
+        else:
+            # Create new user
+            import uuid
+            random_password = str(uuid.uuid4())
+            hashed_pw = generate_password_hash(random_password)
+            
+            # Ensure unique username
+            base_username = name.replace(' ', '')
+            username = base_username
+            counter = 1
+            while User.query.filter_by(username=username).first():
+                username = f"{base_username}{counter}"
+                counter += 1
+            
+            new_user = User(username=username, email=email, google_id=google_id, password=hashed_pw)
+            db.session.add(new_user)
+            db.session.commit()
+            
+            # Create default list
+            default_list = MovieList(name="Watchlist", description="My main collection", user_id=new_user.id)
+            db.session.add(default_list)
+            db.session.commit()
+            
+            login_user(new_user)
+            return redirect(url_for('dashboard'))
+            
+    return redirect(url_for('login'))
 
 @app.route('/dashboard')
 @login_required

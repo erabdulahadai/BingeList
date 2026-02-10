@@ -6,11 +6,20 @@
         <h2 style="margin-bottom: 30px;">Initialize Profile</h2>
         <form method="POST">
             <input type="text" name="username" placeholder="Choose Username" required>
+            <input type="email" name="email" placeholder="Email Address" required>
             <input type="password" name="password" placeholder="Set Password" required>
-            <button type="submit" class="btn btn-neon" style="width: 100%; margin-top: 20px;">Create Account</button>
+            <button type="submit" class="btn btn-neon"
+                style="width: 100%; margin-top: 20px; box-sizing: border-box;">Create Account</button>
+            <div style="margin-top: 15px; text-align: center;">
+                <span style="color: rgba(255,255,255,0.5); font-size: 0.9rem;">— OR —</span>
+            </div>
+            <a href="{{ url_for('google_login', mode='signup') }}" class="btn"
+                style="width: 100%; margin-top: 15px; background-color: #db4437; color: white; border: none; display: flex; align-items: center; justify-content: center; text-decoration: none; box-sizing: border-box;">
+                <i class="fab fa-google" style="margin-right: 10px;"></i> Continue with Google
+            </a>
         </form>
         <p style="margin-top: 20px; font-size: 0.9rem;">
-            Already have an ID? <a href="{{ url_for('login') }}">Login</a>
+            Already have an Account? <a href="{{ url_for('login') }}">Login</a>
         </p>
     </div>
 </div>
