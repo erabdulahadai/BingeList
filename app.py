@@ -4,6 +4,11 @@ from werkzeug.security import generate_password_hash, check_password_hash
 from flask_login import login_user, logout_user, login_required, current_user
 import requests
 from config import Config
+import os
+
+# Allow OAuth over HTTP for local testing
+os.environ['OAUTHLIB_INSECURE_TRANSPORT'] = '1'
+
 from extensions import db, login_manager, oauth
 from sqlalchemy import or_
 from models import User, Movie, Review, MovieList, Message
@@ -18,16 +23,12 @@ login_manager.init_app(app)
 oauth.init_app(app)
 
 # Configure Google OAuth
+# Configure Google OAuth
 oauth.register(
     name='google',
     client_id=app.config['GOOGLE_CLIENT_ID'],
     client_secret=app.config['GOOGLE_CLIENT_SECRET'],
-    access_token_url='https://accounts.google.com/o/oauth2/token',
-    access_token_params=None,
-    authorize_url='https://accounts.google.com/o/oauth2/auth',
-    authorize_params=None,
-    api_base_url='https://www.googleapis.com/oauth2/v1/',
-    userinfo_endpoint='https://openidconnect.googleapis.com/v1/userinfo',  # This is only needed if using openid to fetch user info
+    server_metadata_url='https://accounts.google.com/.well-known/openid-configuration',
     client_kwargs={'scope': 'openid email profile'},
 )
 
@@ -103,6 +104,69 @@ def login():
         else:
             flash('Invalid credentials.', 'error')
     return render_template('login.html')
+
+@app.route('/forgot-password', methods=['GET', 'POST'])
+def forgot_password():
+    if request.method == 'POST':
+        email = request.form['email']
+        user = User.query.filter_by(email=email).first()
+        
+        if user:
+            # In a real app, send email with token. Here, redirect to reset.
+            # We use a simple signed token for demonstration safety.
+            from itsdangerous import URLSafeTimedSerializer
+            s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+            token = s.dumps(email, salt='email-confirm')
+            
+            return redirect(url_for('reset_password', token=token))
+        else:
+            flash('User not found.', 'error')
+            
+    return render_template('forgot_password.html')
+
+@app.route('/reset-password/<token>', methods=['GET', 'POST'])
+def reset_password(token):
+    from itsdangerous import URLSafeTimedSerializer, SignatureExpired
+    s = URLSafeTimedSerializer(app.config['SECRET_KEY'])
+    
+    try:
+        email = s.loads(token, salt='email-confirm', max_age=3600) # 1 hour expr
+    except SignatureExpired:
+        flash('The reset link is expired.', 'error')
+        return redirect(url_for('forgot_password'))
+    except Exception:
+        flash('Invalid token.', 'error')
+        return redirect(url_for('forgot_password'))
+        
+    if request.method == 'POST':
+        password = request.form['password']
+        confirm = request.form['confirm_password']
+        
+        if password != confirm:
+            flash('Passwords do not match.', 'error')
+            return render_template('reset_password.html')
+            
+        if password != confirm:
+            flash('Passwords do not match.', 'error')
+            return render_template('reset_password.html')
+            
+        # Password Validation
+        import re
+        if len(password) < 8 or not re.search(r"[a-zA-Z]", password) or not re.search(r"\d", password) or not re.search(r"[!@#$%^&*(),.?\":{}|<>]", password):
+            flash('Password must be at least 8 chars, include a letter, a number, and a special character.', 'error')
+            return render_template('reset_password.html')
+            
+        user = User.query.filter_by(email=email).first()
+        if user:
+            user.password = generate_password_hash(password)
+            db.session.commit()
+            flash('Password reset successfully. Please login.', 'success')
+            return redirect(url_for('login'))
+        else:
+            flash('User not found.', 'error')
+            return redirect(url_for('login'))
+
+    return render_template('reset_password.html')
 
 @app.route('/login/google')
 def google_login():
