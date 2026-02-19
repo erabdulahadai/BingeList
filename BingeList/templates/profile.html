@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}{{ user.username }} (@{{ user.username }}) • BingeList{% endblock %}
+
+{% block content %}
+<div class="profile-container fade-in">
+    <!-- Profile Header -->
+    <div class="profile-header glass-card">
+        <div class="profile-avatar">
+            <!-- Avatar Logic -->
+            <div class="avatar-circle">
+                {% if user.avatar %}
+                <img src="{{ url_for('static', filename=user.avatar) }}" alt="{{ user.username }}"
+                    style="width: 100%; height: 100%; object-fit: cover; border-radius: 50%;">
+                {% else %}
+                <span>{{ user.username[0] | upper }}</span>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="profile-info">
+            <div class="profile-top">
+                <h2 class="username">{{ user.username }}</h2>
+                {% if current_user.is_authenticated and current_user.id != user.id %}
+                <div class="profile-actions">
+                    <a href="{{ url_for('chat', username=user.username) }}" class="btn btn-primary">Message</a>
+                    <a href="{{ url_for('compare_taste', username=user.username) }}" class="btn btn-neon">Compare
+                        Taste</a>
+                </div>
+                {% elif current_user.is_authenticated and current_user.id == user.id %}
+                <div class="profile-actions">
+                    <a href="{{ url_for('edit_profile') }}" class="btn btn-neon">Edit Profile</a>
+                </div>
+                {% endif %}
+            </div>
+
+            <div class="profile-stats">
+                <div class="stat-item">
+                    <span class="stat-count">{{ lists_count }}</span>
+                    <span class="stat-label">Lists</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-count">{{ movies_count }}</span>
+                    <span class="stat-label">Movies Collected</span>
+                </div>
+                <div class="stat-item">
+                    <span class="stat-count">{{ reviews_count }}</span>
+                    <span class="stat-label">Reviews</span>
+                </div>
+            </div>
+
+            <div class="profile-bio">
+                <p><strong>{{ user.username }}</strong> has entered the cinema.</p>
+                <!-- Bio could be added to User model later -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Content Tabs (Visual only for now) -->
+    <div class="profile-tabs">
+        <div class="tab active">
+            <svg aria-label="" class="_ab6-" color="rgb(245, 245, 245)" fill="rgb(245, 245, 245)" height="12" role="img"
+                viewBox="0 0 24 24" width="12">
+                <rect fill="none" height="18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
+                    stroke-width="2" width="18" x="3" y="3"></rect>
+                <line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    x1="9.015" x2="9.015" y1="3" y2="21"></line>
+                <line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    x1="14.985" x2="14.985" y1="3" y2="21"></line>
+                <line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    x1="21" x2="3" y1="9.015" y2="9.015"></line>
+                <line fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                    x1="21" x2="3" y1="14.985" y2="14.985"></line>
+            </svg>
+            <span>LISTS</span>
+        </div>
+        <div class="tab">
+            <svg aria-label="" class="_ab6-" color="rgb(141, 160, 188)" fill="rgb(141, 160, 188)" height="12" role="img"
+                viewBox="0 0 24 24" width="12">
+                <path
+                    d="M12 1.505a10.5 10.5 0 1 1-10.5 10.5 10.5 10.5 0 0 1 10.5-10.5Zm0 19.364a8.864 8.864 0 1 0-8.864-8.864 8.864 8.864 0 0 0 8.864 8.864Zm-5.454-9.9H12a.818.818 0 0 1 .818.818V18a.818.818 0 0 1-1.636 0v-4.909H6.546a.818.818 0 0 1 0-1.636Z">
+                </path>
+            </svg>
+            <span>SAVED</span>
+        </div>
+    </div>
+
+    <!-- Profile Grid -->
+    <div class="profile-grid">
+        {% for list in lists %}
+        <div class="grid-item">
+            <a href="{{ url_for('view_list', list_id=list.id) }}" class="grid-link">
+                {% if list.cover_url %}
+                <img src="{{ list.cover_url }}" alt="{{ list.name }}">
+                {% else %}
+                <!-- Dynamic Grid Cover from first 4 movies if available, else placeholder -->
+                <div class="grid-placeholder">
+                    <span>{{ list.name }}</span>
+                </div>
+                {% endif %}
+                <div class="grid-overlay">
+                    <div class="overlay-stats">
+                        <i class="fas fa-film"></i> {{ list.movies|length }}
+                    </div>
+                </div>
+            </a>
+        </div>
+        {% else %}
+        <div class="no-content">
+            <p>No lists created yet.</p>
+        </div>
+        {% endfor %}
+    </div>
+    <!-- Sign Out Button (Bottom of Profile) -->
+    {% if current_user.is_authenticated and current_user.id == user.id %}
+    <div class="profile-settings">
+        <a href="{{ url_for('logout') }}" class="btn-logout-profile">Sign Out</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in" style="height: 80vh; display: flex; flex-direction: column;">
+    <!-- Header -->
+    <div class="glass-card"
+        style="padding: 15px 30px; margin-bottom: 20px; display: flex; align-items: center; justify-content: space-between;">
+        <div style="display: flex; align-items: center; gap: 15px;">
+            <a href="{{ url_for('inbox') }}" class="btn btn-neon" style="padding: 8px 15px;">&larr;</a>
+            <h2 style="margin: 0;">{{ other_user.username }}</h2>
+        </div>
+        <a href="{{ url_for('compare_taste', username=other_user.username) }}" class="btn btn-neon"
+            style="font-size: 0.8rem;">
+            ♥ Check Compatibility
+        </a>
+    </div>
+
+    <!-- Chat Area -->
+    <div class="glass-card chat-container" id="chatContainer">
+        {% for msg in messages %}
+        <div class="message-bubble {{ 'sent' if msg.sender_id == current_user.id else 'received' }}">
+            <div class="message-content">
+                {{ msg.body }}
+            </div>
+            <div class="message-time">
+                {{ msg.timestamp.strftime('%H:%M') }}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    <!-- Input Area -->
+    <div class="glass-card" style="padding: 15px; margin-top: 20px;">
+        <form method="POST" style="display: flex; gap: 15px;">
+            <input type="text" name="body" placeholder="Type a message..." required autocomplete="off"
+                style="margin-bottom: 0;">
+            <button type="submit" class="btn btn-primary">Send</button>
+        </form>
+    </div>
+</div>
+
+<script>
+    // Auto-scroll to bottom
+    const container = document.getElementById('chatContainer');
+    container.scrollTop = container.scrollHeight;
+</script>
+{% endblock %}

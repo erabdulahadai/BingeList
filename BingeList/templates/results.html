@@ -1,0 +1,18 @@
+<div class="card glass-card">
+    {% if movie.poster_path %}
+        <img src="https://image.tmdb.org/t/p/w500{{ movie.poster_path }}" alt="Poster">
+    {% else %}
+        <div style="height: 300px; background: #222; display: flex; align-items: center; justify-content: center;">No Image</div>
+    {% endif %}
+    
+    <div style="padding: 15px;">
+        <h4 style="margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ movie.title }}</h4>
+        <p style="color: #666; font-size: 0.9rem;">{{ movie.release_date[:4] if movie.release_date else "N/A" }}</p>
+        
+        <form action="/add" method="POST">
+            <input type="hidden" name="title" value="{{ movie.title }}">
+            <input type="hidden" name="poster" value="{{ movie.poster_path }}">
+            <button type="submit" class="btn-neon" style="width: 100%; border-radius: 5px;">+ Add to List</button>
+        </form>
+    </div>
+</div>

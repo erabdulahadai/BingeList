@@ -1,0 +1,50 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2>Incoming Transmissions</h2>
+        <button onclick="document.getElementById('composeModal').style.display='block'" class="btn btn-neon">New
+            Transmission</button>
+    </div>
+
+    <div class="glass-card">
+        {% if conversations %}
+        <div style="display: flex; flex-direction: column; gap: 10px;">
+            {% for user in conversations %}
+            <a href="{{ url_for('chat', username=user.username) }}" style="text-decoration: none; color: inherit;">
+                <div class="glass-card"
+                    style="padding: 15px; border: 1px solid var(--glass-border); display: flex; align-items: center; transition: background 0.2s;">
+                    <div
+                        style="width: 50px; height: 50px; border-radius: 50%; background: #333; display: flex; align-items: center; justify-content: center; margin-right: 15px; font-size: 1.2rem; font-weight: bold; color: var(--neon-blue);">
+                        {{ user.username[0]|upper }}
+                    </div>
+                    <div>
+                        <h3 style="margin: 0; font-size: 1.1rem;">{{ user.username }}</h3>
+                        <p style="margin: 0; font-size: 0.8rem; color: var(--text-muted);">Click to open chat</p>
+                    </div>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-center" style="color: var(--text-muted);">No active conversations. Start a new one above!</p>
+        {% endif %}
+    </div>
+
+    <!-- Compose Modal -->
+    <div id="composeModal" class="glass-card"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 90%; max-width: 500px; box-shadow: 0 0 50px rgba(0,0,0,0.8);">
+        <h3 style="margin-top: 0;">Compose Message</h3>
+        <form action="{{ url_for('send_message') }}" method="POST">
+            <input type="text" name="recipient" placeholder="Recipient Username" required>
+            <textarea name="body" placeholder="Message content..." rows="4" required></textarea>
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Send</button>
+                <button type="button" onclick="document.getElementById('composeModal').style.display='none'"
+                    class="btn btn-neon" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

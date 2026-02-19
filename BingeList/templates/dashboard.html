@@ -1,0 +1,68 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<div class="fade-in">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+        <h2>My Curated Lists</h2>
+        <button onclick="document.getElementById('createListModal').style.display='block'" class="btn btn-neon">+ Create
+            List</button>
+    </div>
+
+    {% if lists %}
+    <div style="display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px;">
+        {% for lst in lists %}
+        <div class="glass-card" style="position: relative;">
+            <h3>{{ lst.name }}</h3>
+
+            <div
+                style="height: 150px; background: rgba(0,0,0,0.3); border-radius: 10px; margin-bottom: 15px; overflow: hidden; display: flex; align-items: center; justify-content: center;">
+                {% if lst.cover_url %}
+                <img src="{{ lst.cover_url }}" style="width: 100%; height: 100%; object-fit: cover;"
+                    onerror="this.onerror=null;this.src='https://via.placeholder.com/500x250?text=Broken+Link'">
+                {% elif lst.movies %}
+                {% set first_movie = lst.movies[0] %}
+                {% if first_movie.poster %}
+                <img src="https://image.tmdb.org/t/p/w500{{ first_movie.poster }}"
+                    style="width: 100%; height: 100%; object-fit: cover;"
+                    onerror="this.onerror=null;this.parent.innerHTML='<span style=\'color: var(--text-muted);\'>Image Unavailable</span>'">
+                {% else %}
+                <span style="color: var(--text-muted);">No Poster</span>
+                {% endif %}
+                {% else %}
+                <span style="color: var(--text-muted);">Empty List</span>
+                {% endif %}
+            </div>
+
+            <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 10px;">{{ lst.movies|length }} Movies
+            </p>
+            <p>{{ lst.description }}</p>
+            <a href="{{ url_for('view_list', list_id=lst.id) }}" class="btn btn-primary" style="margin-top: 10px;">View
+                Collection</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div class="glass-card text-center mt-50">
+        <h3>You have no lists.</h3>
+        <p>Create a list to start organizing your collection.</p>
+    </div>
+    {% endif %}
+
+    <!-- Create List Modal -->
+    <div id="createListModal" class="glass-card"
+        style="display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); z-index: 1000; width: 90%; max-width: 500px; box-shadow: 0 0 50px rgba(0,0,0,0.8);">
+        <h3 style="margin-top: 0;">Create New List</h3>
+        <form action="{{ url_for('create_list') }}" method="POST">
+            <input type="text" name="name" placeholder="List Name (e.g., 'Horror Classics')" required>
+            <textarea name="description" placeholder="Description..." rows="3"></textarea>
+            <input type="url" name="cover_url" placeholder="Cover Image URL (Optional - e.g., Wallpaper link)">
+            <div style="display: flex; gap: 10px; margin-top: 20px;">
+                <button type="submit" class="btn btn-primary" style="flex: 1;">Create</button>
+                <button type="button" onclick="document.getElementById('createListModal').style.display='none'"
+                    class="btn btn-neon" style="flex: 1;">Cancel</button>
+            </div>
+        </form>
+    </div>
+
+</div>
+{% endblock %}
