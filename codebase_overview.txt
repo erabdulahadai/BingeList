@@ -1,0 +1,60 @@
+# BingeList Codebase Overview
+
+This document provides a summary of the BingeList application files, their functions, and the overall code flow.
+
+## File Overview
+
+### Core Application
+- `app.py`: The main entry point and "brain" of the app. It manages:
+    - Flask routing and view functions.
+    - TMDB API interactions with multi-threaded fetching and local database caching.
+    - User authentication (login, signup, logout) using Flask-Login.
+    - Social features (messaging, follow/unfollow) and search logic.
+- `models.py`: Defines the database structure:
+    - `User`: Handles account information and social relationships.
+    - `MovieList`: Custom collections created by users.
+    - `Movie`: Specific film or show entries within a list.
+    - `Review`: Ratings and comments on movies.
+    - `Message`: Internal user-to-user chat records.
+    - `SearchHistory` & `APICache`: Utilities for performance and history tracking.
+- `config.py`: Stores configuration variables (API Keys, Database paths, Secret keys).
+- `extensions.py`: Initialized Flask extensions to prevent circular imports.
+
+### Design and UI
+- `static/`:
+    - `css/main.css`: Futuristic, neon-themed styling for the entire application.
+    - `uploads/avatars/`: Folder for user profile pictures uploaded from devices.
+- `templates/`: Jinja2 templates for rendering HTML.
+    - `base.html`: The skeleton of every page (navbar, footer, theme).
+    - `search.html`: The Instagram-style tabbed search for Movies, TV, and People.
+    - `profile.html`: User profile page with List grids and social stats.
+    - `social_list.html`: Displays lists of followers or following users.
+    - `movie_details.html`: Deep dive into specific movie/TV information.
+    - `chat.html`: The messaging interface.
+
+### Database and Setup
+- `database.db`: The SQLite file where all user data and caches are stored.
+- `requirements.txt`: List of Python libraries required to run the project.
+- `fix_db.py` / `populate_db.py`: Maintenance scripts for seeding data or correcting schema issues.
+
+---
+
+## Application Flow
+
+1. **Authentication Flow**:
+    - Users arrive at `/index`, sign up at `/signup`, and log in at `/login`.
+    - Sessions are managed by `Flask-Login`, ensuring secure access to personal lists.
+
+2. **Data Fetching Flow (The Hybrid Model)**:
+    - When a user views the `home` page or `search` page, the app requests data from the TMDB (The Movie Database) API.
+    - **Caching**: To save time and API quota, `fetch_tmdb_data` first checks the local `APICache` table. If the data isn't there, it fetches it fresh and saves it for next time.
+    - **Concurrency**: For the search page, the app uses parallel threads to search for Movies, TV Shows, and People simultaneously, making the interface feel fast.
+
+3. **User Interaction Flow**:
+    - **Search**: A unified search bar allows finding films or other users (Instagram-style).
+    - **Lists**: Users create `MovieList` objects and "Add to Collection," which creates a `Movie` record linked to that list.
+    - **Social**: Users follow each other via the profile page. This allows them to compare movie tastes and see "Soulmate" scores through the `compare_taste` logic.
+    - **Messaging**: Users can send messages directly, which are stored in the `Message` table and displayed in an inbox logic.
+
+4. **Persistence**:
+    - Every action (adding a movie, sending a message, updating an avatar) is committed via SQLAlchemy to the SQLite database.
